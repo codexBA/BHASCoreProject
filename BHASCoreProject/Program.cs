@@ -46,6 +46,7 @@ using (var scope = app.Services.CreateScope())
     //
     authDbContext!.Database.Migrate(); // pokrecemo migraciju baze podataka - kreiramo bazu i tablice ako ne postoje
     // nakon krerianja baze - pokrenut cemo Seed 
+    await SeedData.Initialize(services);
 }
 
 // nakon pokretanja aplikacije pokrecemo migraciju / kreiranje baze
