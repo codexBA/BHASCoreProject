@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="BHASCore.Data.Identity/BHASCore.Data.Identity.csproj" />
+  <Project Path="BHASCoreProject/BHASCore.Web.csproj" />
+</Solution>
