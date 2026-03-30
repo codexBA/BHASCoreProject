@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="BHASCore.Data.Business/BHASCore.Data.Business.csproj" Id="f2be60bd-d8ff-4a2c-b7a8-3f260df89a10" />
   <Project Path="BHASCore.Data.Identity/BHASCore.Data.Identity.csproj" />
   <Project Path="BHASCoreProject/BHASCore.Web.csproj" />
 </Solution>

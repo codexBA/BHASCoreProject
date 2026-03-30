@@ -1,3 +1,4 @@
+using BHASCore.Data.Business;
 using BHASCore.Data.Identity;
 using BHASCore.Web.Controllers;
 using Microsoft.AspNetCore.Identity;
@@ -14,6 +15,16 @@ var identityConnString = builder.Configuration.GetConnectionString("IdentityConn
 // registracija konteksta baze podataka za Identity
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseSqlServer(identityConnString));
+
+
+// business db context
+var businessConnString = builder.Configuration.GetConnectionString("BusinessConnection")
+    ?? throw new InvalidOperationException("Connection string 'BusinessConnection' not found.");
+
+builder.Services.AddDbContext<BusinessDbContext>(options =>
+    options.UseSqlServer(businessConnString));
+// ---------------
+
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -63,12 +74,18 @@ var app = builder.Build(); // ovim se pokrece aplikacija
 // add-migration naziv_migracije -Context AuthDbContext
 using (var scope = app.Services.CreateScope())
 {
+    // AUTH / IDENTITY - DB - CONTEXT
     var services = scope.ServiceProvider;
     var authDbContext = services.GetService<AuthDbContext>();// dobvljamo servis
     //
     authDbContext!.Database.Migrate(); // pokrecemo migraciju baze podataka - kreiramo bazu i tablice ako ne postoje
     // nakon krerianja baze - pokrenut cemo Seed 
     await SeedData.Initialize(services);
+    //---------------------------------------
+    // BUSINESS - DB - CONTEXT
+    var businessDbContext = services.GetService<BusinessDbContext>();// dobvljamo servis
+    businessDbContext.Database.Migrate(); // pokrecemo migraciju baze podataka - kreiramo bazu i tablice ako ne postoje
+
 }
 
 // nakon pokretanja aplikacije pokrecemo migraciju / kreiranje baze
