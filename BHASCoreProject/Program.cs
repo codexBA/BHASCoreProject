@@ -1,4 +1,5 @@
 using BHASCore.Data.Identity;
+using BHASCore.Web.Controllers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,6 +37,27 @@ builder.Services.AddDefaultIdentity<IdentityUser>
 
 //---------------------------------------------
 builder.Services.AddControllersWithViews();
+
+// dodavanje u container servisa - kako bi se mogao koristiti bilo gdje u aplikaciji (npr. u controllerima) - Dependency Injection
+//builder.Services.AddScoped<IPricingService, PricingServiceEUR>(); // registracija servisa za cijene - da se moze koristiti u controllerima
+builder.Services.AddScoped<IPricingService>(sp =>
+{
+    // logika za odabir servisa - npr. na osnovu konfiguracije ili nekog uvjeta
+    var configService = sp.GetService<IConfiguration>();
+
+    var currency = configService["AppSettings:Valuta"]; // u appsettings.json
+    if (currency == "EUR")
+    {
+        return new PricingServiceEUR();
+    }
+    else
+    {
+        return new PricingServiceBAM();
+    }
+}); // registracija servisa za cijene - da se moze koristiti u controllerima
+
+
+// builder.Services.AddScoped<IPricingService, PricingServiceBAM>(); // registracija servisa za cijene - da se moze koristiti u controllerima
 
 var app = builder.Build(); // ovim se pokrece aplikacija
 // add-migration naziv_migracije -Context AuthDbContext

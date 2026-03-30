@@ -1,0 +1,4 @@
+﻿namespace BHASCore.Web.Servis
+{
+    
+}
