@@ -86,6 +86,7 @@ using (var scope = app.Services.CreateScope())
     var businessDbContext = services.GetService<BusinessDbContext>();// dobvljamo servis
     businessDbContext.Database.Migrate(); // pokrecemo migraciju baze podataka - kreiramo bazu i tablice ako ne postoje
 
+    await SeedBusinessData.Initialize(services); // pokrecemo Seed za business bazu podataka - dodajemo pocetne podatke
 }
 
 // nakon pokretanja aplikacije pokrecemo migraciju / kreiranje baze
