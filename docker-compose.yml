@@ -1,0 +1,73 @@
+# =============================================================
+# BHAS Core Project - Docker Compose Configuration
+# =============================================================
+# CUSTOM PORTOVI - Promijenite ako su zauzeti:
+#   - SQL Server: 14333 (Host) -> 1433 (Container)
+#   - Web HTTP:   5100  (Host) -> 8080 (Container)
+#
+# Pristup:
+#   - Web App:    http://localhost:5100 (samo HTTP)
+#   - SQL Server: localhost,14333 (sa Windows-a)
+#
+# Napomena: HTTPS je onemogućen u Docker-u za development
+#           (nema potrebe za HTTPS certifikatom)
+# =============================================================
+
+services:
+  # SQL Server Kontejner
+  bhas-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bhas-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "BhasAdmin123!"
+      MSSQL_PID: "Developer"
+    ports:
+      - "14333:1433"  # Host port 14333 mapira na container port 1433
+    volumes:
+      - bhas-sqldata:/var/opt/mssql
+    networks:
+      - bhas-network
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "BhasAdmin123!" -Q "SELECT 1" -C
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # Web Aplikacija
+  bhascoreapp:
+    image: bhascoreproject:latest
+    container_name: bhascoreapp
+    build:
+      context: .
+      dockerfile: BHASCoreProject/Dockerfile
+    ports:
+      - "5100:8080"  # HTTP na portu 5100 (umjesto 8080)
+      # HTTPS onemogućen u Docker-u za development
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_HTTP_PORTS: "8080"
+      # HTTPS onemogućen - nema certifikata u Docker kontejneru
+      ASPNETCORE_URLS: "http://+:8080"
+      # Connection strings - koristimo naziv SQL kontejnera kao server
+      ConnectionStrings__IdentityConnection: "Server=bhas-sqlserver,1433;Database=BHASIdentity;User Id=sa;Password=BhasAdmin123!;TrustServerCertificate=True;Encrypt=False;"
+      ConnectionStrings__BusinessConnection: "Server=bhas-sqlserver,1433;Database=BHASBusiness;User Id=sa;Password=BhasAdmin123!;TrustServerCertificate=True;Encrypt=False;"
+      # App settings
+      AppSettings__Valuta: "EUR"
+    depends_on:
+      bhas-sqlserver:
+        condition: service_healthy
+    networks:
+      - bhas-network
+    restart: unless-stopped
+
+volumes:
+  bhas-sqldata:
+    name: bhas-sqldata
+
+networks:
+  bhas-network:
+    name: bhas-network
+    driver: bridge

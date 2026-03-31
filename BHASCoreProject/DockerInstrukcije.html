@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Instrukcije - BHASCoreProject</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-left: 5px solid #3498db;
+        }
+        h3 {
+            color: #16a085;
+            margin-top: 20px;
+        }
+        .step {
+            background-color: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .code-block {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border: 1px solid #34495e;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .code-block pre {
+            margin: 0;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        .code-block code {
+            display: block;
+            white-space: pre;
+            color: #ecf0f1;
+            background: transparent;
+            padding: 0;
+            border: none;
+        }
+        /* Syntax highlighting colors */
+        .code-block .comment {
+            color: #95a5a6;
+        }
+        .code-wrapper {
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+        }
+        .copy-btn:active {
+            background-color: #2980b9;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-left: 5px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        ul, ol {
+            margin-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .scenario {
+            border: 2px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐳 Docker Instrukcije za BHASCoreProject</h1>
+
+    <div class="info">
+        <strong>📋 Pregled:</strong> Ovaj dokument objašnjava kako dockerizovati BHASCoreProject aplikaciju 
+        sa svim scenarijima povezivanja na bazu podataka.
+    </div>
+
+    <!-- ============================================ -->
+    <!-- KORAK 1: DODAVANJE DOCKER PODRŠKE -->
+    <!-- ============================================ -->
+    <h2>📦 Korak 1: Dodavanje Docker Podrške u Visual Studio</h2>
+
+    <div class="step">
+        <h3>1.1. Automatsko Kreiranje Dockerfile-a</h3>
+        <ol>
+            <li>U <strong>Solution Explorer</strong>, desni klik na <code>BHASCoreProject</code></li>
+            <li>Odaberite: <strong>Add</strong> → <strong>Docker Support</strong></li>
+            <li>Izaberite: <strong>Linux</strong> (preporučeno) ili <strong>Windows</strong></li>
+            <li>Visual Studio će automatski kreirati <code>Dockerfile</code></li>
+        </ol>
+
+        <div class="info">
+            <strong>💡 Napomena:</strong> Visual Studio će kreirati optimizovan Dockerfile sa multi-stage build procesom.
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SCENARIJI -->
+    <!-- ============================================ -->
+    <h2>🔧 Scenariji Povezivanja na Bazu Podataka</h2>
+
+    <!-- SCENARIO 1 -->
+    <div class="scenario">
+        <h2>📍 SCENARIO 1: Lokalna Baza na Host Mašini (SQL Server na Windows-u)</h2>
+
+        <div class="step">
+            <h3>1.1. Izmjena Connection String-a</h3>
+            <p>U <code>appsettings.json</code> ili <code>appsettings.Development.json</code>:</p>
+
+            <div class="code-block"><pre><code>{
+  "ConnectionStrings": {
+    "IdentityConnection": "Server=host.docker.internal,1433;Database=BHASIdentity;User Id=sa;Password=VašaLozinka;TrustServerCertificate=True;",
+    "BusinessConnection": "Server=host.docker.internal,1433;Database=BHASBusiness;User Id=sa;Password=VašaLozinka;TrustServerCertificate=True;"
+  },
+  "AppSettings": {
+    "Valuta": "EUR"
+  }
+}</code></pre></div>
+
+            <div class="warning">
+                <strong>⚠️ Važno:</strong> <code>host.docker.internal</code> omogućava Docker kontejneru 
+                da pristupa SQL Server-u koji radi na vašem Windows host računaru.
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>1.2. Pokretanje Docker Kontejnera</h3>
+
+            <p><strong>Opcija A - Iz Visual Studio:</strong></p>
+            <ol>
+                <li>Pritisnite <strong>F5</strong> ili kliknite <strong>Docker</strong> u toolbar-u</li>
+                <li>Visual Studio automatski build-uje i pokreće kontejner</li>
+            </ol>
+
+            <p><strong>Opcija B - Ručno iz PowerShell-a:</strong></p>
+
+            <div class="code-block"><pre><code># Navigirajte do root foldera projekta (gdje je .sln fajl)
+cd X:\Codex\GitHub\Obuka\BHAS-PROJEKAT-CLASS\
+
+# Build Docker image
+docker build -t bhascoreproject:latest -f BHASCoreProject/Dockerfile .
+
+# Pokrenite kontejner
+docker run -d -p 8080:8080 -p 8081:8081 --name bhascoreapp bhascoreproject:latest
+
+# Pristupite aplikaciji na:
+# http://localhost:8080</code></pre></div>
+        </div>
+
+        <div class="step">
+            <h3>1.3. Provjera i Upravljanje</h3>
+            <div class="code-block"><pre><code># Provjerite da li kontejner radi
+docker ps
+
+# Pogledajte logove
+docker logs bhascoreapp
+
+# Zaustavite kontejner
+docker stop bhascoreapp
+
+# Pokrenite ponovo
+docker start bhascoreapp
+
+# Uklonite kontejner
+docker rm bhascoreapp</code></pre></div>
+        </div>
+    </div>
+
+    <!-- SCENARIO 2 -->
+    <div class="scenario">
+        <h2>🐳 SCENARIO 2: SQL Server u Docker Kontejneru</h2>
+
+        <div class="step">
+            <h3>2.1. Kreiranje Docker Network-a</h3>
+            <p>Docker network omogućava komunikaciju između kontejnera:</p>
+
+            <div class="code-block"><pre><code># Kreirajte custom bridge network
+docker network create bhas-network
+
+# Provjerite da je network kreiran
+docker network ls</code></pre></div>
+
+            <div class="info">
+                <strong>💡 Zašto Docker Network?</strong> Omogućava imenima kontejnera da funkcionišu 
+                kao DNS imena, tako da možete koristiti naziv kontejnera umjesto IP adrese.
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>2.2. Pokretanje SQL Server Kontejnera</h3>
+
+            <div class="code-block"><pre><code># Pokrenite SQL Server 2022 kontejner na istom network-u
+docker run -d `
+  --name bhas-sqlserver `
+  --network bhas-network `
+  -e "ACCEPT_EULA=Y" `
+  -e "SA_PASSWORD=VašaJakaSifra123!" `
+  -p 1433:1433 `
+  mcr.microsoft.com/mssql/server:2022-latest
+
+# Provjerite da li SQL Server radi
+docker logs bhas-sqlserver</code></pre></div>
+
+            <div class="warning">
+                <strong>⚠️ Sigurnost Lozinke:</strong> Lozinka mora sadržavati najmanje:
+                <ul>
+                    <li>8 karaktera</li>
+                    <li>Velika i mala slova</li>
+                    <li>Brojeve i specijalne karaktere</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>2.3. Kreiranje Baza Podataka (Opciono - ako ne koristite migracije)</h3>
+
+            <div class="code-block"><pre><code># Pristupite SQL Server kontejneru
+docker exec -it bhas-sqlserver /opt/mssql-tools/bin/sqlcmd `
+  -S localhost -U sa -P "VašaJakaSifra123!"
+
+# U sqlcmd prompt-u unesite:
+CREATE DATABASE BHASIdentity;
+GO
+CREATE DATABASE BHASBusiness;
+GO
+EXIT</code></pre></div>
+
+            <div class="info">
+                <strong>💡 Napomena:</strong> Vaš <code>Program.cs</code> automatski pokreće migracije 
+                pomoću <code>authDbContext!.Database.Migrate();</code>, tako da ovo možda nije potrebno.
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>2.4. Izmjena Connection String-a</h3>
+            <p>Kreirajte <code>appsettings.Docker.json</code> u projektu:</p>
+
+            <div class="code-block"><pre><code>{
+  "ConnectionStrings": {
+    "IdentityConnection": "Server=bhas-sqlserver,1433;Database=BHASIdentity;User Id=sa;Password=VašaJakaSifra123!;TrustServerCertificate=True;",
+    "BusinessConnection": "Server=bhas-sqlserver,1433;Database=BHASBusiness;User Id=sa;Password=VašaJakaSifra123!;TrustServerCertificate=True;"
+  },
+  "AppSettings": {
+    "Valuta": "EUR"
+  }
+}</code></pre></div>
+
+            <div class="warning">
+                <strong>⚠️ Ključna Razlika:</strong> Koristimo <code>bhas-sqlserver</code> (naziv kontejnera) 
+                umjesto <code>host.docker.internal</code>.
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>2.5. Izmjena Dockerfile-a da Koristi Docker Appsettings</h3>
+            <p>U vašem <code>Dockerfile</code>, dodajte kopiranje fajla:</p>
+
+            <div class="code-block"><pre><code># Primjer multi-stage Dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+WORKDIR /app
+EXPOSE 8080
+EXPOSE 8081
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY ["BHASCoreProject/BHASCoreProject.csproj", "BHASCoreProject/"]
+COPY ["BHASCore.Data/BHASCore.Data.csproj", "BHASCore.Data/"]
+RUN dotnet restore "BHASCoreProject/BHASCoreProject.csproj"
+COPY . .
+WORKDIR "/src/BHASCoreProject"
+RUN dotnet build "BHASCoreProject.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "BHASCoreProject.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+# Kopirajte Docker-specifični appsettings (ako postoji)
+COPY ["BHASCoreProject/appsettings.Docker.json", "./appsettings.Production.json"]
+
+ENTRYPOINT ["dotnet", "BHASCoreProject.dll"]</code></pre></div>
+        </div>
+
+        <div class="step">
+            <h3>2.6. Build i Pokretanje Web Aplikacije</h3>
+
+            <div class="code-block"><pre><code># Build image
+docker build -t bhascoreproject:latest -f BHASCoreProject/Dockerfile .
+
+# Pokrenite kontejner na istom network-u
+docker run -d `
+  --name bhascoreapp `
+  --network bhas-network `
+  -p 8080:8080 `
+  -p 8081:8081 `
+  bhascoreproject:latest
+
+# Provjerite da oba kontejnera rade na istom network-u
+docker network inspect bhas-network</code></pre></div>
+
+            <div class="success">
+                <strong>✅ Uspješno!</strong> Vaša aplikacija je pokrenuta i povezana sa SQL Server-om 
+                u odvojenom kontejneru putem <code>bhas-network</code>.
+            </div>
+        </div>
+    </div>
+
+    <!-- SCENARIO 3 -->
+    <div class="scenario">
+        <h2>🚀 SCENARIO 3: Docker Compose (Preporučeno)</h2>
+
+        <div class="info">
+            <strong>💡 Prednosti:</strong> Docker Compose omogućava pokretanje oba kontejnera 
+            (web app + SQL Server) jednom komandom, automatski kreira network i upravlja svim konfiguracijama.
+        </div>
+
+        <div class="step">
+            <h3>3.1. Kreiranje Docker Fajlova (Ručno)</h3>
+
+            <div class="info">
+                <strong>💡 Napomena za Visual Studio 2026:</strong> U Insiders verziji možda opcija "Container Orchestration Support" 
+                nije dostupna. Umjesto toga, kreirajte fajlove ručno - to vam daje više kontrole!
+            </div>
+
+            <p><strong>Već kreirani fajlovi u projektu:</strong></p>
+            <ul>
+                <li><code>BHASCoreProject/Dockerfile</code> - Build instrukcije za web app</li>
+                <li><code>docker-compose.yml</code> - Orchestracija servisa (root folder)</li>
+                <li><code>.dockerignore</code> - Fajlovi koji se ne kopiraju u image</li>
+            </ul>
+
+            <p><strong>Alternativno - Ako želite dodati kroz Visual Studio:</strong></p>
+            <ol>
+                <li>Možda trebate instalirati <strong>Docker Desktop</strong> i restartovati VS</li>
+                <li>Ili: <strong>Add</strong> → <strong>Docker Support</strong> (kreiraće Dockerfile)</li>
+                <li>Zatim ručno kreirajte <code>docker-compose.yml</code></li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>3.2. Kreiranje docker-compose.yml</h3>
+            <p>Visual Studio će kreirati fajl, ali evo prilagođene verzije:</p>
+
+            <div class="code-block"><pre><code>version: '3.8'
+
+services:
+  # SQL Server Kontejner
+  bhas-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bhas-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=VašaJakaSifra123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    networks:
+      - bhas-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "VašaJakaSifra123!" -Q "SELECT 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Web Aplikacija
+  bhascoreapp:
+    image: bhascoreproject:latest
+    container_name: bhascoreapp
+    build:
+      context: .
+      dockerfile: BHASCoreProject/Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__IdentityConnection=Server=bhas-sqlserver,1433;Database=BHASIdentity;User Id=sa;Password=VašaJakaSifra123!;TrustServerCertificate=True;
+      - ConnectionStrings__BusinessConnection=Server=bhas-sqlserver,1433;Database=BHASBusiness;User Id=sa;Password=VašaJakaSifra123!;TrustServerCertificate=True;
+      - AppSettings__Valuta=EUR
+    depends_on:
+      bhas-sqlserver:
+        condition: service_healthy
+    networks:
+      - bhas-network
+
+volumes:
+  sqldata:
+
+networks:
+  bhas-network:
+    driver: bridge</code></pre></div>
+
+            <div class="info">
+                <strong>💡 Objašnjenje:</strong>
+                <ul>
+                    <li><code>depends_on</code>: Osigurava da SQL Server startuje prije web app-a</li>
+                    <li><code>healthcheck</code>: Provjerava da li je SQL Server spreman</li>
+                    <li><code>volumes</code>: Perzistentno čuvanje SQL podataka</li>
+                    <li><code>environment</code>: Override-uje appsettings preko environment varijabli</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>3.3. Pokretanje sa Docker Compose</h3>
+
+            <p><strong>Opcija A - Iz Visual Studio 2026:</strong></p>
+            <ol>
+                <li>Desni klik na <code>docker-compose.yml</code> fajl</li>
+                <li>Odaberite <strong>"Set as Startup Project"</strong> (ako je dostupno)</li>
+                <li>Ili pritisnite <strong>F5</strong> nakon što otvorite docker-compose.yml</li>
+            </ol>
+
+            <p><strong>Opcija B - Iz PowerShell (Preporučeno):</strong></p>
+
+            <div class="code-block"><pre><code># Navigirajte do root foldera (gdje je docker-compose.yml)
+cd X:\Codex\GitHub\Obuka\BHAS-PROJEKAT-CLASS\
+
+# Pokrenite sve servise
+docker-compose up -d
+
+# Pratite logove
+docker-compose logs -f
+
+# Zaustavite sve servise
+docker-compose down
+
+# Zaustavite i uklonite volumes (briše podatke!)
+docker-compose down -v</code></pre></div>
+
+            <div class="success">
+                <strong>✅ Gotovo!</strong> Aplikacija i baza su pokrenuti i međusobno povezani.
+                <br>Pristupite: <code>http://localhost:8080</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- NAPREDNE KONFIGURACIJE -->
+    <!-- ============================================ -->
+    <h2>⚙️ Napredne Konfiguracije</h2>
+
+    <div class="step">
+        <h3>Korištenje Environment Varijabli</h3>
+        <p>Možete override-ovati bilo koju appsettings vrijednost kroz environment varijable:</p>
+
+        <div class="code-block"><pre><code>docker run -d `
+  -e "ConnectionStrings__IdentityConnection=Server=..." `
+  -e "AppSettings__Valuta=BAM" `
+  --name bhascoreapp `
+  bhascoreproject:latest</code></pre></div>
+
+        <div class="info">
+            <strong>💡 Format:</strong> Koristite <code>__</code> (dva underscore-a) za navigaciju kroz JSON hijerarhiju.
+        </div>
+    </div>
+
+    <div class="step">
+        <h3>Korištenje .env Fajla sa Docker Compose</h3>
+        <p>Kreirajte <code>.env</code> fajl:</p>
+
+        <div class="code-block"><pre><code>SA_PASSWORD=VašaJakaSifra123!
+VALUTA=EUR</code></pre></div>
+
+        <p>U <code>docker-compose.yml</code>:</p>
+        <div class="code-block"><pre><code>environment:
+  - SA_PASSWORD=${SA_PASSWORD}
+  - AppSettings__Valuta=${VALUTA}</code></pre></div>
+    </div>
+
+    <div class="step">
+        <h3>Pristup Kontejnerima Izvan Docker Desktop-a</h3>
+
+        <div class="code-block"><pre><code># Pogledajte sve kontejnere
+docker ps -a
+
+# Pristupite shell-u web kontejnera
+docker exec -it bhascoreapp /bin/bash
+
+# Pristupite SQL Server-u sa host mašine
+sqlcmd -S localhost,1433 -U sa -P "VašaJakaSifra123!"
+
+# Kopirajte fajlove iz kontejnera
+docker cp bhascoreapp:/app/appsettings.json ./</code></pre></div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TROUBLESHOOTING -->
+    <!-- ============================================ -->
+    <h2>🔍 Rješavanje Problema (Troubleshooting)</h2>
+
+    <div class="step">
+        <h3>Problem 1: Aplikacija ne može da se poveže na SQL Server</h3>
+
+        <div class="code-block"><pre><code># Provjerite da li kontejneri mogu da ping-uju jedan drugi
+docker exec bhascoreapp ping bhas-sqlserver
+
+# Provjerite network
+docker network inspect bhas-network
+
+# Provjerite SQL Server logove
+docker logs bhas-sqlserver</code></pre></div>
+    </div>
+
+    <div class="step">
+        <h3>Problem 2: "Login failed for user 'sa'"</h3>
+        <ul>
+            <li>Provjerite da li je SQL Server kontejner potpuno pokrenut (pričekajte ~30 sekundi)</li>
+            <li>Provjerite da li je lozinka dovoljno jaka</li>
+            <li>Dodajte <code>TrustServerCertificate=True;</code> u connection string</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h3>Problem 3: Port 8080 je već zauzet</h3>
+
+        <div class="code-block"><pre><code># Promijenite port mapiranje
+docker run -d -p 9090:8080 -p 9091:8081 --name bhascoreapp bhascoreproject:latest
+
+# Ili zaustavite postojeći kontejner
+docker stop $(docker ps -q --filter "publish=8080")</code></pre></div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ČIŠĆENJE -->
+    <!-- ============================================ -->
+    <h2>🧹 Čišćenje Docker Resursa</h2>
+
+    <div class="step">
+        <div class="code-block"><pre><code># Zaustavite sve pokrenute kontejnere
+docker stop $(docker ps -q)
+
+# Uklonite sve zaustavljene kontejnere
+docker container prune -f
+
+# Uklonite nekorištene image-e
+docker image prune -a -f
+
+# Uklonite nekorištene volumes
+docker volume prune -f
+
+# Uklonite nekorištene networks
+docker network prune -f
+
+# Kompletan reset (OPREZ!)
+docker system prune -a --volumes -f</code></pre></div>
+
+        <div class="warning">
+            <strong>⚠️ OPREZ:</strong> <code>docker system prune -a --volumes</code> briše SVE 
+            Docker resurse uključujući podatke u volumes!
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- ZAKLJUČAK -->
+    <!-- ============================================ -->
+    <h2>📚 Zaključak</h2>
+
+    <div class="success">
+        <h3>Preporučeni Workflow:</h3>
+        <ol>
+            <li>Za <strong>lokalni development</strong>: Koristite <strong>Scenario 1</strong> (lokalna baza)</li>
+            <li>Za <strong>testiranje</strong>: Koristite <strong>Scenario 3</strong> (Docker Compose)</li>
+            <li>Za <strong>produkciju</strong>: Koristite managed database service (Azure SQL, AWS RDS)</li>
+        </ol>
+    </div>
+
+    <div class="info">
+        <h3>Korisni Linkovi:</h3>
+        <ul>
+            <li><a href="https://docs.docker.com/" target="_blank">Docker Dokumentacija</a></li>
+            <li><a href="https://learn.microsoft.com/en-us/dotnet/core/docker/introduction" target="_blank">Microsoft .NET Docker Guide</a></li>
+            <li><a href="https://hub.docker.com/_/microsoft-mssql-server" target="_blank">SQL Server Docker Image</a></li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px; padding: 20px; background-color: #2c3e50; color: white; border-radius: 5px;">
+        <p><strong>🎓 BHASCoreProject Docker Instrukcije</strong></p>
+        <p>Kreirano: Mart 2026 | .NET 10</p>
+    </div>
+
+    <script>
+        // Funkcionalnost za copy-to-clipboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dodaj copy dugme za svaki code block
+            const codeBlocks = document.querySelectorAll('.code-block');
+
+            codeBlocks.forEach(function(block, index) {
+                // Kreiraj wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-wrapper';
+                block.parentNode.insertBefore(wrapper, block);
+                wrapper.appendChild(block);
+
+                // Kreiraj copy button
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = '📋 Kopiraj';
+                copyBtn.setAttribute('data-index', index);
+
+                // Dodaj event listener
+                copyBtn.addEventListener('click', function() {
+                    const code = block.querySelector('code');
+                    const text = code.textContent;
+
+                    // Kopiraj u clipboard
+                    navigator.clipboard.writeText(text).then(function() {
+                        copyBtn.textContent = '✅ Kopirano!';
+                        copyBtn.style.backgroundColor = '#27ae60';
+
+                        setTimeout(function() {
+                            copyBtn.textContent = '📋 Kopiraj';
+                            copyBtn.style.backgroundColor = '#3498db';
+                        }, 2000);
+                    }).catch(function(err) {
+                        console.error('Greška pri kopiranju: ', err);
+                        copyBtn.textContent = '❌ Greška';
+                        copyBtn.style.backgroundColor = '#e74c3c';
+                    });
+                });
+
+                wrapper.insertBefore(copyBtn, block);
+            });
+
+            // Smooth scroll za linkove
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

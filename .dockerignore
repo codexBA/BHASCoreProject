@@ -1,0 +1,59 @@
+# =============================================
+# .dockerignore za BHASCoreProject
+# =============================================
+# Fajlovi koji se NE kopiraju u Docker image tokom build-a
+# (Ovo NE utiče na Git - samo na Docker build proces)
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vscode/
+
+# Build results (ne treba u image-u)
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet packages (restore se radi u Dockerfile)
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+
+# Test projekti (ako postoje)
+**/*[Tt]ests/
+**/*.Tests/
+**/*[Tt]est/
+**/*.Test/
+
+# Node modules (ako koristite npm/yarn)
+**/node_modules/
+**/npm-debug.log
+
+# Temporary files
+*.swp
+*.bak
+*.tmp
+*.orig
+**/.DS_Store
+**/Thumbs.db
+
