@@ -4,6 +4,7 @@ using System.Diagnostics;
 
 namespace BHASCoreProject.Controllers
 {
+
     public class HomeController : Controller
     {
         public IActionResult Index()

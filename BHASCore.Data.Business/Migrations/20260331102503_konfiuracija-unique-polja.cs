@@ -23,6 +23,7 @@ namespace BHASCore.Data.Business.Migrations
                 column: "JMBG",
                 unique: true,
                 filter: "[JMBG] IS NOT NULL");
+
         }
 
         /// <inheritdoc />

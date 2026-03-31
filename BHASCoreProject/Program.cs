@@ -1,4 +1,5 @@
 using BHASCore.Data.Business;
+using BHASCore.Data.Business.Services;
 using BHASCore.Data.Identity;
 using BHASCore.Web.Controllers;
 using Microsoft.AspNetCore.Identity;
@@ -49,6 +50,9 @@ builder.Services.AddDefaultIdentity<IdentityUser>
 //---------------------------------------------
 builder.Services.AddControllersWithViews();
 
+#region -- DI - ovdje radimo registraciju servisa --
+
+#region -- pricing servis - logika vezana za prikaz cijena u različitim valutama --
 // dodavanje u container servisa - kako bi se mogao koristiti bilo gdje u aplikaciji (npr. u controllerima) - Dependency Injection
 //builder.Services.AddScoped<IPricingService, PricingServiceEUR>(); // registracija servisa za cijene - da se moze koristiti u controllerima
 builder.Services.AddScoped<IPricingService>(sp =>
@@ -67,10 +71,17 @@ builder.Services.AddScoped<IPricingService>(sp =>
     }
 }); // registracija servisa za cijene - da se moze koristiti u controllerima
 
-
 // builder.Services.AddScoped<IPricingService, PricingServiceBAM>(); // registracija servisa za cijene - da se moze koristiti u controllerima
 
+#endregion -- pricing servis - logika vezana za prikaz cijena u različitim valutama --
+
+builder.Services.AddScoped<IDepartmentService, DepartmentService>(); // registracija servisa za department - da se moze koristiti u controllerima
+
+#endregion -- DI - ovdje radimo registraciju servisa --
+
+
 var app = builder.Build(); // ovim se pokrece aplikacija
+
 // add-migration naziv_migracije -Context AuthDbContext
 using (var scope = app.Services.CreateScope())
 {
@@ -88,6 +99,7 @@ using (var scope = app.Services.CreateScope())
 
     await SeedBusinessData.Initialize(services); // pokrecemo Seed za business bazu podataka - dodajemo pocetne podatke
 }
+
 
 // nakon pokretanja aplikacije pokrecemo migraciju / kreiranje baze
 
