@@ -400,7 +400,12 @@ docker network inspect bhas-network</code></pre></div>
             <h3>3.2. Kreiranje docker-compose.yml</h3>
             <p>Visual Studio će kreirati fajl, ali evo prilagođene verzije:</p>
 
-            <div class="code-block"><pre><code>version: '3.8'
+            <div class="code-block"><pre><code># =============================================================
+# BHAS Core Project - Docker Compose Configuration
+# =============================================================
+# NAPOMENA: HTTPS je onemogućen za development (nema certifikata)
+# Pristup: http://localhost:5100 (samo HTTP)
+# =============================================================
 
 services:
   # SQL Server Kontejner
@@ -408,19 +413,22 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: bhas-sqlserver
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=VašaJakaSifra123!
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "BhasAdmin123!"
+      MSSQL_PID: "Developer"
     ports:
-      - "1433:1433"
+      - "14333:1433"  # Windows port 14333 -> Container port 1433
     volumes:
-      - sqldata:/var/opt/mssql
+      - bhas-sqldata:/var/opt/mssql  # Perzistentno čuvanje SQL podataka
     networks:
       - bhas-network
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "VašaJakaSifra123!" -Q "SELECT 1"
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "BhasAdmin123!" -Q "SELECT 1" -C
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
 
   # Web Aplikacija
   bhascoreapp:
@@ -430,24 +438,27 @@ services:
       context: .
       dockerfile: BHASCoreProject/Dockerfile
     ports:
-      - "8080:8080"
-      - "8081:8081"
+      - "5100:8080"  # HTTP samo (bez HTTPS)
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__IdentityConnection=Server=bhas-sqlserver,1433;Database=BHASIdentity;User Id=sa;Password=VašaJakaSifra123!;TrustServerCertificate=True;
-      - ConnectionStrings__BusinessConnection=Server=bhas-sqlserver,1433;Database=BHASBusiness;User Id=sa;Password=VašaJakaSifra123!;TrustServerCertificate=True;
-      - AppSettings__Valuta=EUR
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__IdentityConnection: "Server=bhas-sqlserver,1433;Database=BHASIdentity;User Id=sa;Password=BhasAdmin123!;TrustServerCertificate=True;Encrypt=False;"
+      ConnectionStrings__BusinessConnection: "Server=bhas-sqlserver,1433;Database=BHASBusiness;User Id=sa;Password=BhasAdmin123!;TrustServerCertificate=True;Encrypt=False;"
+      AppSettings__Valuta: "EUR"
     depends_on:
       bhas-sqlserver:
         condition: service_healthy
     networks:
       - bhas-network
+    restart: unless-stopped
 
 volumes:
-  sqldata:
+  bhas-sqldata:
+    name: bhas-sqldata
 
 networks:
   bhas-network:
+    name: bhas-network
     driver: bridge</code></pre></div>
 
             <div class="info">
@@ -457,12 +468,199 @@ networks:
                     <li><code>healthcheck</code>: Provjerava da li je SQL Server spreman</li>
                     <li><code>volumes</code>: Perzistentno čuvanje SQL podataka</li>
                     <li><code>environment</code>: Override-uje appsettings preko environment varijabli</li>
+                    <li><code>restart: unless-stopped</code>: Automatski restart ako kontejner padne</li>
                 </ul>
             </div>
         </div>
 
         <div class="step">
-            <h3>3.3. Pokretanje sa Docker Compose</h3>
+            <h3>3.3. Razumijevanje docker-compose.yml Strukture</h3>
+
+            <p><strong>YAML Format - Osnove:</strong></p>
+            <div class="info">
+                <ul>
+                    <li><strong>Indentacija je KLJUČNA</strong> - koristite 2 spaces (ne TAB)</li>
+                    <li><strong>Key: Value</strong> - osnovni format</li>
+                    <li><strong>Liste</strong> - počinju sa <code>-</code></li>
+                    <li><strong>Komentari</strong> - počinju sa <code>#</code></li>
+                </ul>
+            </div>
+
+            <div class="code-block"><pre><code># Glavne sekcije docker-compose.yml:
+
+services:          # Kontejneri koje želimo pokrenuti
+  service-name:    # Naziv servisa
+    image:         # Docker image koji će se koristiti
+    container_name:# Ime kontejnera
+    environment:   # Environment varijable
+    ports:         # Port mapping (HOST:CONTAINER)
+    volumes:       # Disk storage mapping
+    networks:      # Mreže za komunikaciju
+    depends_on:    # Redoslijed pokretanja
+
+volumes:           # Named volumes za perzistentne podatke
+  volume-name:
+
+networks:          # Custom networks
+  network-name:</code></pre></div>
+        </div>
+
+        <div class="step">
+            <h3>3.4. Docker Volumes - Gdje se Podaci Čuvaju?</h3>
+
+            <p><strong>Šta su Volumes?</strong></p>
+            <div class="info">
+                Docker volumes su <strong>virtuelni hard disk-ovi</strong> koje Docker upravlja. 
+                Podaci ostaju NAKON što obrišete kontejnere!
+            </div>
+
+            <p><strong>U našem projektu:</strong></p>
+            <div class="code-block"><pre><code>volumes:
+  bhas-sqldata:              # Ime volume-a
+    name: bhas-sqldata       # Docker internal name
+
+# Povezivanje sa SQL Server kontejnerom:
+services:
+  bhas-sqlserver:
+    volumes:
+      - bhas-sqldata:/var/opt/mssql
+        ^^^^^^^^^^^^  ^^^^^^^^^^^^^^^
+        |             |
+        Volume name   Path UNUTAR kontejnera gdje se čuvaju SQL fajlovi</code></pre></div>
+
+            <p><strong>📂 Gdje se FIZIČKI čuvaju podaci na Windows-u?</strong></p>
+            <div class="code-block"><pre><code># Docker Desktop čuva volumes na:
+C:\Users\[VašeKorisničkoIme]\AppData\Local\Docker\wsl\data\
+
+# Ili unutar WSL2 Linux distribuicije:
+\\wsl$\docker-desktop-data\data\docker\volumes\bhas-sqldata\_data\
+
+# Komanda za pregled:
+docker volume inspect bhas-sqldata</code></pre></div>
+
+            <div class="warning">
+                <strong>⚠️ Važno:</strong> Ne pristupajte direktno tim fajlovima sa Windows-a! 
+                Koristite Docker komande za backup i restore.
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>3.5. Upravljanje Docker Volumes</h3>
+
+            <div class="code-block"><pre><code># Pregled svih volumes
+docker volume ls
+
+# Detalji o volume-u
+docker volume inspect bhas-sqldata
+
+# Lokacija podataka
+docker volume inspect bhas-sqldata --format '{{ .Mountpoint }}'
+
+# Uklanjanje volume-a (BRIŠE PODATKE!)
+docker volume rm bhas-sqldata
+
+# Pravljenje backup-a SQL podataka
+docker exec bhas-sqlserver /opt/mssql-tools18/bin/sqlcmd `
+  -S localhost -U sa -P "BhasAdmin123!" `
+  -Q "BACKUP DATABASE BHASIdentity TO DISK = '/var/opt/mssql/backup/BHASIdentity.bak'"
+
+# Kopiraj backup na Windows
+docker cp bhas-sqlserver:/var/opt/mssql/backup/BHASIdentity.bak ./backup/</code></pre></div>
+        </div>
+
+        <div class="step">
+            <h3>3.6. Port Mapping - Detaljno Objašnjenje</h3>
+
+            <p><strong>Format: <code>"HOST_PORT:CONTAINER_PORT"</code></strong></p>
+
+            <div class="code-block"><pre><code>ports:
+  - "5100:8080"
+     ^^^^  ^^^^
+     |     └─── Port UNUTAR Docker kontejnera (ne mijenjate)
+     └───────── Port na vašem Windows računaru (MOŽETE mijenjati)
+
+Primjer:
+  - "5100:8080"  # Pristup: http://localhost:5100
+  - "9999:8080"  # Pristup: http://localhost:9999
+  - "80:8080"    # Pristup: http://localhost (no port needed)</code></pre></div>
+
+            <div class="info">
+                <strong>💡 Zašto različiti portovi?</strong>
+                <ul>
+                    <li><strong>14333</strong> (SQL) - Izbjegava konflikt sa lokalnim SQL Server-om na 1433</li>
+                    <li><strong>5100</strong> (Web) - Izbjegava konflikt sa IIS-om i drugim web serverima</li>
+                    <li>Kontejneri međusobno komuniciraju preko INTERNOG network-a (ne koriste host portove)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>3.7. Docker Networks - Komunikacija Između Kontejnera</h3>
+
+            <div class="code-block"><pre><code># Kreiranje custom network-a
+networks:
+  bhas-network:
+    name: bhas-network
+    driver: bridge      # Najčešći tip - LAN unutar Docker-a
+
+# Oba kontejnera na istom network-u
+services:
+  bhas-sqlserver:
+    networks:
+      - bhas-network  # Pridružen bhas-network-u
+
+  bhascoreapp:
+    networks:
+      - bhas-network  # Takođe na bhas-network-u</code></pre></div>
+
+            <p><strong>🌐 Kako kontejneri komuniciraju?</strong></p>
+            <div class="code-block"><pre><code># Web app koristi IME kontejnera kao DNS:
+ConnectionStrings__IdentityConnection: "Server=bhas-sqlserver,1433;..."
+                                                ^^^^^^^^^^^^^^
+                                                Ime SQL kontejnera - radi kao hostname!
+
+# Docker interno pretvara:
+bhas-sqlserver → 172.18.0.2:1433 (internal IP)
+
+# Web app NE koristi:
+Server=localhost,14333  # ❌ Ovo je za Windows host
+Server=localhost,1433   # ❌ Ovo je loopback u web kontejneru
+
+# Web app KORISTI:
+Server=bhas-sqlserver,1433  # ✅ DNS name preko Docker network-a</code></pre></div>
+
+            <div class="success">
+                <strong>✅ Vizuelizacija:</strong>
+                <pre>
+┌─────────────────────────────────────────────────────┐
+│ Windows Host Machine                                │
+│                                                     │
+│  http://localhost:5100 ──► Port Mapping ───┐       │
+│  localhost:14333 ──────────► Port Mapping ──┼───┐   │
+└─────────────────────────────────────────────┼───┼───┘
+                                              │   │
+                ┌─────────────────────────────┼───┼───┐
+                │ Docker Network: bhas-network│   │   │
+                │                             ▼   ▼   │
+                │  ┌─────────────────┐   ┌─────────┐ │
+                │  │ bhascoreapp     │   │ bhas-   │ │
+                │  │ :8080           │◄──┤sqlserver│ │
+                │  │                 │   │ :1433   │ │
+                │  └─────────────────┘   └────┬────┘ │
+                │                             │      │
+                └─────────────────────────────┼──────┘
+                                              │
+                                              ▼
+                                    ┌─────────────────┐
+                                    │ bhas-sqldata    │
+                                    │ (Volume)        │
+                                    └─────────────────┘
+                </pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>3.8. Pokretanje sa Docker Compose</h3>
 
             <p><strong>Opcija A - Iz Visual Studio 2026:</strong></p>
             <ol>
@@ -490,7 +688,8 @@ docker-compose down -v</code></pre></div>
 
             <div class="success">
                 <strong>✅ Gotovo!</strong> Aplikacija i baza su pokrenuti i međusobno povezani.
-                <br>Pristupite: <code>http://localhost:8080</code>
+                <br><strong>Pristupite:</strong> <code>http://localhost:5100</code> (samo HTTP)
+                <br><strong>SQL Server:</strong> <code>localhost,14333</code> (sa vašeg Windows-a)
             </div>
         </div>
     </div>
@@ -499,6 +698,45 @@ docker-compose down -v</code></pre></div>
     <!-- NAPREDNE KONFIGURACIJE -->
     <!-- ============================================ -->
     <h2>⚙️ Napredne Konfiguracije</h2>
+
+    <div class="step">
+        <h3>HTTPS u Docker Kontejneru (Opciono - Naprednije)</h3>
+
+        <div class="info">
+            <strong>💡 Zašto nema HTTPS u development?</strong>
+            <ul>
+                <li>Developer certifikati sa Windows-a nisu dostupni u Linux Docker kontejnerima</li>
+                <li>Za lokalni development, HTTP je potpuno dovoljan</li>
+                <li>Production deployment (Azure, AWS) automatski dodaje HTTPS</li>
+            </ul>
+        </div>
+
+        <p><strong>Ako ipak želite HTTPS za testiranje:</strong></p>
+        <div class="code-block"><pre><code># 1. Generirajte self-signed certifikat
+dotnet dev-certs https -ep ${HOME}/.aspnet/https/aspnetapp.pfx -p "YourPassword"
+dotnet dev-certs https --trust
+
+# 2. Kopirajte u projekat
+mkdir https
+copy ${HOME}\.aspnet\https\aspnetapp.pfx .\https\
+
+# 3. Ažurirajte docker-compose.yml:
+bhascoreapp:
+  ports:
+    - "5100:8080"   # HTTP
+    - "5101:8081"   # HTTPS
+  environment:
+    ASPNETCORE_URLS: "https://+:8081;http://+:8080"
+    ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
+    ASPNETCORE_Kestrel__Certificates__Default__Password: "YourPassword"
+  volumes:
+    - ./https:/https:ro  # Read-only mount</code></pre></div>
+
+        <div class="warning">
+            <strong>⚠️ Napomena:</strong> Self-signed certifikati će ipak pokazati upozorenje u browseru. 
+            Za pravu produkciju koristite Let's Encrypt ili Azure App Service certifikate.
+        </div>
+    </div>
 
     <div class="step">
         <h3>Korištenje Environment Varijabli</h3>
@@ -572,13 +810,52 @@ docker logs bhas-sqlserver</code></pre></div>
     </div>
 
     <div class="step">
-        <h3>Problem 3: Port 8080 je već zauzet</h3>
+        <h3>Problem 3: Port 5100 ili 14333 je već zauzet</h3>
 
-        <div class="code-block"><pre><code># Promijenite port mapiranje
-docker run -d -p 9090:8080 -p 9091:8081 --name bhascoreapp bhascoreproject:latest
+        <div class="code-block"><pre><code># Promijenite port mapiranje u docker-compose.yml
+ports:
+  - "9090:8080"      # Umjesto 5100
+  - "15000:1433"     # Umjesto 14333
 
-# Ili zaustavite postojeći kontejner
-docker stop $(docker ps -q --filter "publish=8080")</code></pre></div>
+# Ili provjerite koji proces koristi port
+netstat -ano | findstr :5100
+netstat -ano | findstr :14333
+
+# Zaustavite proces (sa PID-om iz output-a)
+taskkill /PID <PID> /F</code></pre></div>
+    </div>
+
+    <div class="step">
+        <h3>Problem 4: Volume zauzima puno prostora</h3>
+
+        <div class="code-block"><pre><code># Provjerite veličinu volume-a
+docker system df -v
+
+# Očistite stare SQL backup-e (ako ih pravite)
+docker exec bhas-sqlserver rm -rf /var/opt/mssql/backup/*
+
+# Kompletno čišćenje SQL podataka (OPREZ - briše sve!)
+docker-compose down -v
+docker volume rm bhas-sqldata</code></pre></div>
+
+        <div class="warning">
+            <strong>⚠️ UPOZORENJE:</strong> <code>docker-compose down -v</code> briše SVE podatke 
+            iz baze! Napravite backup prije nego izvršite ovu komandu.
+        </div>
+    </div>
+
+    <div class="step">
+        <h3>Problem 5: "HTTPS endpoint error" greška</h3>
+
+        <div class="info">
+            <strong>✅ Rješeno:</strong> HTTPS je onemogućen u trenutnoj konfiguraciji. 
+            Ako vidite ovu grešku:
+            <ul>
+                <li>Provjerite da imate <code>ASPNETCORE_URLS: "http://+:8080"</code> u docker-compose.yml</li>
+                <li>Provjerite da nema <code>ASPNETCORE_HTTPS_PORTS</code> environment varijable</li>
+                <li>Rebuild image: <code>docker-compose up -d --build</code></li>
+            </ul>
+        </div>
     </div>
 
     <!-- ============================================ -->
@@ -587,6 +864,42 @@ docker stop $(docker ps -q --filter "publish=8080")</code></pre></div>
     <h2>🧹 Čišćenje Docker Resursa</h2>
 
     <div class="step">
+        <h3>Backup i Restore SQL Podataka</h3>
+
+        <p><strong>1. Backup SQL Baza (Unutar Kontejnera):</strong></p>
+        <div class="code-block"><pre><code># Kreirajte backup folder na Windows-u
+mkdir backup
+
+# SQL Server backup komanda
+docker exec bhas-sqlserver /opt/mssql-tools18/bin/sqlcmd `
+  -S localhost -U sa -P "BhasAdmin123!" -C `
+  -Q "BACKUP DATABASE BHASIdentity TO DISK = '/var/opt/mssql/data/BHASIdentity.bak' WITH FORMAT, INIT"
+
+docker exec bhas-sqlserver /opt/mssql-tools18/bin/sqlcmd `
+  -S localhost -U sa -P "BhasAdmin123!" -C `
+  -Q "BACKUP DATABASE BHASBusiness TO DISK = '/var/opt/mssql/data/BHASBusiness.bak' WITH FORMAT, INIT"
+
+# Kopirajte backup fajlove na Windows
+docker cp bhas-sqlserver:/var/opt/mssql/data/BHASIdentity.bak ./backup/
+docker cp bhas-sqlserver:/var/opt/mssql/data/BHASBusiness.bak ./backup/</code></pre></div>
+
+        <p><strong>2. Restore SQL Baza:</strong></p>
+        <div class="code-block"><pre><code># Kopirajte backup fajlove u kontejner
+docker cp ./backup/BHASIdentity.bak bhas-sqlserver:/var/opt/mssql/data/
+docker cp ./backup/BHASBusiness.bak bhas-sqlserver:/var/opt/mssql/data/
+
+# Restore baza
+docker exec bhas-sqlserver /opt/mssql-tools18/bin/sqlcmd `
+  -S localhost -U sa -P "BhasAdmin123!" -C `
+  -Q "RESTORE DATABASE BHASIdentity FROM DISK = '/var/opt/mssql/data/BHASIdentity.bak' WITH REPLACE"
+
+docker exec bhas-sqlserver /opt/mssql-tools18/bin/sqlcmd `
+  -S localhost -U sa -P "BhasAdmin123!" -C `
+  -Q "RESTORE DATABASE BHASBusiness FROM DISK = '/var/opt/mssql/data/BHASBusiness.bak' WITH REPLACE"</code></pre></div>
+    </div>
+
+    <div class="step">
+        <h3>Čišćenje Resursa</h3>
         <div class="code-block"><pre><code># Zaustavite sve pokrenute kontejnere
 docker stop $(docker ps -q)
 
@@ -619,10 +932,66 @@ docker system prune -a --volumes -f</code></pre></div>
     <div class="success">
         <h3>Preporučeni Workflow:</h3>
         <ol>
-            <li>Za <strong>lokalni development</strong>: Koristite <strong>Scenario 1</strong> (lokalna baza)</li>
-            <li>Za <strong>testiranje</strong>: Koristite <strong>Scenario 3</strong> (Docker Compose)</li>
-            <li>Za <strong>produkciju</strong>: Koristite managed database service (Azure SQL, AWS RDS)</li>
+            <li>Za <strong>lokalni development</strong>: Koristite <strong>Scenario 1</strong> (lokalna baza) ili direktno VS debugging</li>
+            <li>Za <strong>testiranje sa timom</strong>: Koristite <strong>Scenario 3</strong> (Docker Compose)</li>
+            <li>Za <strong>CI/CD i deployment</strong>: Docker images sa Azure Container Registry ili Docker Hub</li>
+            <li>Za <strong>produkciju</strong>: Koristite managed servise (Azure App Service + Azure SQL)</li>
         </ol>
+    </div>
+
+    <div class="step">
+        <h3>📋 Brza Referenca - Najčešće Komande</h3>
+
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+                <tr style="background-color: #3498db; color: white;">
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Akcija</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Komanda</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Pokretanje (prvo pokretanje)</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>docker-compose up -d --build</code></td>
+                </tr>
+                <tr style="background-color: #f9f9f9;">
+                    <td style="padding: 10px; border: 1px solid #ddd;">Pokretanje (bez rebuild-a)</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>docker-compose up -d</code></td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Zaustavljanje</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>docker-compose down</code></td>
+                </tr>
+                <tr style="background-color: #f9f9f9;">
+                    <td style="padding: 10px; border: 1px solid #ddd;">Restart servisa</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>docker-compose restart</code></td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Logovi (real-time)</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>docker-compose logs -f</code></td>
+                </tr>
+                <tr style="background-color: #f9f9f9;">
+                    <td style="padding: 10px; border: 1px solid #ddd;">Status kontejnera</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>docker-compose ps</code></td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Pristup SQL Server-u</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>sqlcmd -S localhost,14333 -U sa -P "BhasAdmin123!"</code></td>
+                </tr>
+                <tr style="background-color: #f9f9f9;">
+                    <td style="padding: 10px; border: 1px solid #ddd;">Pristup web aplikaciji</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>http://localhost:5100</code></td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Backup SQL podataka</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>docker exec bhas-sqlserver /opt/mssql-tools18/bin/sqlcmd ...</code></td>
+                </tr>
+                <tr style="background-color: #fff3cd;">
+                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>OPREZ: Brisanje sa podacima</strong></td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;"><code>docker-compose down -v</code></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="info">
@@ -631,6 +1000,7 @@ docker system prune -a --volumes -f</code></pre></div>
             <li><a href="https://docs.docker.com/" target="_blank">Docker Dokumentacija</a></li>
             <li><a href="https://learn.microsoft.com/en-us/dotnet/core/docker/introduction" target="_blank">Microsoft .NET Docker Guide</a></li>
             <li><a href="https://hub.docker.com/_/microsoft-mssql-server" target="_blank">SQL Server Docker Image</a></li>
+            <li><a href="https://docs.docker.com/compose/compose-file/" target="_blank">Docker Compose File Reference</a></li>
         </ul>
     </div>
 
