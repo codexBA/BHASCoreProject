@@ -76,9 +76,9 @@ builder.Services.AddScoped<IPricingService>(sp =>
 #endregion -- pricing servis - logika vezana za prikaz cijena u različitim valutama --
 
 builder.Services.AddScoped<IDepartmentService, DepartmentService>(); // registracija servisa za department - da se moze koristiti u controllerima
+builder.Services.AddScoped<IEmployeeService, EmployeeService>(); // registracija servisa za employee - da se moze koristiti u controllerima
 
 #endregion -- DI - ovdje radimo registraciju servisa --
-
 
 var app = builder.Build(); // ovim se pokrece aplikacija
 
