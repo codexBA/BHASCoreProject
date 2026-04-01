@@ -23,9 +23,38 @@
                 <td>@department.DepartmentCode</td>
                 <td>@(department.Budget.HasValue ? $"{department.Budget.Value:N2} KM" : "N/A")</td>
                 <td style="text-align: center;">
-                    <input type="button" class="btn btn-info" value="Zaposlenici - AJAX"/>
+                    <input type="button" class="btn btn-info" 
+                                onclick="ispisiZaposlene(@department.DepartmentID)" 
+                                value="Zaposlenici - AJAX"/>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
+<div id="employeePanel">
+    <p>Ovdje ce se izlistati zaposlenici</p>
+
+</div>
+
+@section Scripts{
+    <script>
+        function ispisiZaposlene(departmentId)
+        {
+            console.log('ja sam metoda -ispisiZaposlene-, dptID: '+departmentId)
+            //alert(departmentId);
+            var apiEndpoint = '/api/employees/by-department/'+departmentId;
+            //
+            $.getJSON(apiEndpoint)
+                .done(function(employees){
+                    // ovdje cemo obraditit rezultate
+
+                })
+                .fail(function(msg){
+                    alert('Ne valja!');
+                });
+        }
+
+    </script>
+
+}
